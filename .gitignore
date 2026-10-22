@@ -4,3 +4,4 @@ bin/
 __pycache__/
 report.md
 models.gguf
+run_when_ready*.sh
