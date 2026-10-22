@@ -1,0 +1,6 @@
+models/
+bin/
+*.parts
+__pycache__/
+report.md
+models.gguf

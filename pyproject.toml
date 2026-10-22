@@ -1,0 +1,12 @@
+[project]
+name = "slothaudit"
+version = "0.1.0"
+description = "Offline audit agent for trading-strategy repos"
+requires-python = ">=3.9"
+
+[project.scripts]
+slothaudit = "slothaudit.cli:main"
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
