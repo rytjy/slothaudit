@@ -61,6 +61,10 @@ A clean repo gets a deliberately un-reassuring answer:
   Agreement means neither model disputed the checker; disagreement means the
   finding is worth reading yourself. There is no ground truth in the report —
   only who said what.
+
+  On the bundled broken sample the two agreed on **3 of 4** findings. The split
+  was the cost check: Qwen YES, Gemma NO. The run is committed as
+  [docs/compare_report.md](docs/compare_report.md).
 - **The blind spot is fixed text**, not generated: this tool does not run the
   strategy, does not see your data, and cannot tell you the edge is real.
 
