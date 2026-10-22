@@ -68,3 +68,9 @@ A clean repo gets a deliberately un-reassuring answer:
 
 Heuristics over source, not proofs. A finding means *read this line*, not *this
 is wrong*.
+
+## License
+
+MIT — see [LICENSE](LICENSE).
+
+Built during the Hacktoberfest Week 3 window (Oct 19–25, 2026). Any commit made after the submission deadline will be noted here.
