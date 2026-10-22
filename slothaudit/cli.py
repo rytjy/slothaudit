@@ -129,7 +129,7 @@ def main(argv=None):
         wanted = ["qwen", "gemma"] if args.compare else [args.model]
         usable = [m for m in wanted if llm.available(m)]
         missing = [m for m in wanted if m not in usable]
-        limit = 4 if args.compare else 2
+        limit = len(findings)
         for f in findings[:limit]:
             f["verdicts"] = []
             for m in usable:

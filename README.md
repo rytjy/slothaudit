@@ -18,7 +18,7 @@ So the boring pass runs while you sleep, at sloth speed, on your own CPU.
 ## Run
 
     pip install -e .
-    slothaudit audit samples/broken_lookahead      # ~13s on a laptop CPU
+    slothaudit audit samples/broken_lookahead      # ~50s on a laptop CPU (4 model checks)
     slothaudit audit samples/broken_lookahead --compare   # both models, one report
 
 `--no-llm` runs the deterministic checks only (instant).
