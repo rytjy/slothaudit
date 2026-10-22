@@ -1,0 +1,6 @@
+start 2026-10-22T21:56:25+08:00
+model size=1708582752 magic=GGUF at 2026-10-22T22:21:39+08:00
+timing rc=1 elapsed=0s at 2026-10-22T22:21:39+08:00
+compare rc=1 elapsed=154s at 2026-10-22T22:24:13+08:00
+compare_clean rc=0 elapsed=0s at 2026-10-22T22:24:13+08:00
+DONE at 2026-10-22T22:24:13+08:00

@@ -1,0 +1,11 @@
+findings: ['CO-01', 'LA-01', 'SI-01', 'MD-01']
+MODEL gemma available=True
+RESULT gemma CO-01 NO 19.7s 
+RESULT gemma LA-01 YES 19.2s the code fills on the bar that produced the signal.
+RESULT gemma SI-01 YES 17.6s 
+RESULT gemma MD-01 YES 18.2s the code defines equity as the capital and it is never reset.
+MODEL qwen available=True
+RESULT qwen CO-01 YES 13.6s 
+RESULT qwen LA-01 YES 12.5s 
+RESULT qwen SI-01 YES 10.6s 
+RESULT qwen MD-01 YES 10.8s 
