@@ -1,8 +1,7 @@
-"""Thin Ollama client with a local llama.cpp fallback. Localhost only."""
+"""Thin local-model client: llama.cpp first, Ollama only as a fallback. Localhost only."""
 import glob
 import json
 import os
-import shutil
 import subprocess
 import urllib.request
 
@@ -11,24 +10,44 @@ LLAMA_CLI = "/root/slothaudit/bin/llama/llama-b11804/llama-cli"
 LLAMA_LIB = "/root/slothaudit/bin/llama/llama-b11804"
 GGUF_DIR = "/root/slothaudit/models"
 
+ALIASES = {
+    "qwen": "qwen2.5-coder-1.5b-instruct-q4_k_m.gguf",
+    "qwen1.5b": "qwen2.5-coder-1.5b-instruct-q4_k_m.gguf",
+    "qwen2.5-coder-1.5b": "qwen2.5-coder-1.5b-instruct-q4_k_m.gguf",
+    "gemma": "gemma-2-2b-it-Q4_K_M.gguf",
+    "gemma2b": "gemma-2-2b-it-Q4_K_M.gguf",
+    "gemma-2-2b": "gemma-2-2b-it-Q4_K_M.gguf",
+}
 
-def _gguf():
-    if os.environ.get("SLOTHAUDIT_GGUF"):
-        return os.environ["SLOTHAUDIT_GGUF"]
-    files = [p for p in glob.glob(os.path.join(GGUF_DIR, "*.gguf")) if os.path.getsize(p) > 100 << 20]
+
+def resolve_gguf(model):
+    """Map a short name to a local GGUF path, or None when that model is not on disk."""
+    if model and model.endswith(".gguf"):
+        return model if os.path.exists(model) else None
+    key = (model or "").split(":")[0].lower()
+    for alias, name in ALIASES.items():
+        if key == alias:
+            path = os.path.join(GGUF_DIR, name)
+            if os.path.exists(path) and os.path.getsize(path) > 100 << 20:
+                return path
+            return None
+    env = os.environ.get("SLOTHAUDIT_GGUF")
+    if env and os.path.exists(env):
+        return env
+    files = sorted(p for p in glob.glob(os.path.join(GGUF_DIR, "*.gguf")) if os.path.getsize(p) > 100 << 20)
     return files[0] if files else None
 
 
-def available(model="qwen2.5-coder:7b"):
+def available(model="qwen"):
+    if resolve_gguf(model) and os.path.exists(LLAMA_CLI):
+        return True
+    base = (model or "").split(":")[0]
     try:
         with urllib.request.urlopen(HOST + "/api/tags", timeout=3) as f:
             tags = json.load(f)
-        base = model.split(":")[0]
-        if any(m.get("name", "").startswith(base) for m in tags.get("models", [])):
-            return True
+        return any(m.get("name", "").startswith(base) for m in tags.get("models", []))
     except Exception:
-        pass
-    return bool(_gguf() and os.path.exists(LLAMA_CLI))
+        return False
 
 
 def _chat_llamacpp(prompt, gguf, timeout):
@@ -68,16 +87,13 @@ def _chat_llamacpp(prompt, gguf, timeout):
     return out
 
 
-def chat(prompt, model="qwen2.5-coder:7b", timeout=900):
-    try:
-        body = json.dumps({"model": model, "prompt": prompt, "stream": False,
-                           "options": {"temperature": 0.2, "num_predict": 600}}).encode()
-        req = urllib.request.Request(HOST + "/api/generate", data=body,
-                                     headers={"Content-Type": "application/json"})
-        with urllib.request.urlopen(req, timeout=timeout) as f:
-            return json.load(f).get("response", "").strip()
-    except Exception:
-        gguf = _gguf()
-        if not gguf:
-            raise
+def chat(prompt, model="qwen", timeout=900):
+    gguf = resolve_gguf(model)
+    if gguf:
         return _chat_llamacpp(prompt, gguf, timeout)
+    body = json.dumps({"model": model, "prompt": prompt, "stream": False,
+                       "options": {"temperature": 0.2, "num_predict": 600}}).encode()
+    req = urllib.request.Request(HOST + "/api/generate", data=body,
+                                 headers={"Content-Type": "application/json"})
+    with urllib.request.urlopen(req, timeout=timeout) as f:
+        return json.load(f).get("response", "").strip()

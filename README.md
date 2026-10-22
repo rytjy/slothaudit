@@ -19,12 +19,15 @@ So the boring pass runs while you sleep, at sloth speed, on your own CPU.
 
     pip install -e .
     slothaudit audit samples/broken_lookahead      # ~13s on a laptop CPU
+    slothaudit audit samples/broken_lookahead --compare   # both models, one report
 
 `--no-llm` runs the deterministic checks only (instant).
 
-Model: any GGUF via llama.cpp (`SLOTHAUDIT_GGUF=/path/model.gguf`), or an
-Ollama server on `127.0.0.1:11434`. Tested with Qwen2.5-Coder-1.5B-Instruct
-Q4_K_M and llama.cpp build b11804.
+Models: `--model qwen` (Qwen2.5-Coder-1.5B-Instruct Q4_K_M) or
+`--model gemma` (Gemma 2 2B IT Q4_K_M), both loaded with llama.cpp build
+b11804. Any other GGUF works via `--model /path/model.gguf` or
+`SLOTHAUDIT_GGUF`. An Ollama server on `127.0.0.1:11434` is used only when
+the named model is not on disk.
 
 ## Output
 
@@ -53,6 +56,11 @@ A clean repo gets a deliberately un-reassuring answer:
 - **The model answers one yes/no/unsure question per finding**, with six lines of
   context. That is a task a 1.5B can do. Asking it to write a summary produced
   confident nonsense, so I stopped asking.
+- **Two models are a confidence signal, not a vote.** `--compare` asks the same
+  question of Qwen 1.5B and Gemma 2B independently and prints both answers.
+  Agreement means neither model disputed the checker; disagreement means the
+  finding is worth reading yourself. There is no ground truth in the report —
+  only who said what.
 - **The blind spot is fixed text**, not generated: this tool does not run the
   strategy, does not see your data, and cannot tell you the edge is real.
 

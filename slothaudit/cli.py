@@ -83,7 +83,7 @@ def render(repo, findings, summary):
         out += [head, ""]
     if summary:
         out += [summary, ""]
-    elif not any(f.get("verdict") for f in findings):
+    elif not any(f.get("verdict") or f.get("verdicts") for f in findings):
         out += ["(deterministic findings only — no model available)", ""]
     out += ["## Findings", ""]
     if not findings:
@@ -91,7 +91,15 @@ def render(repo, findings, summary):
     for f in findings:
         out += ["### %s [%s] %s" % (f["id"], f["severity"], f["title"]), "",
                 "%s:%d" % (f["path"], f["line"]), "", f["detail"]]
-        if f.get("verdict"):
+        if f.get("verdicts"):
+            parts = []
+            for name, (v, why) in f["verdicts"]:
+                parts.append("%s **%s**%s" % (name, v, (" — " + why) if why else ""))
+            out += ["", "Model check: " + " · ".join(parts)]
+            if len(f["verdicts"]) > 1:
+                agree = len({v for _, (v, _) in f["verdicts"]}) == 1
+                out += ["", "Agreement: " + ("yes" if agree else "no")]
+        elif f.get("verdict"):
             why = f["verdict"][1]
             out += ["", "Model check: **%s**%s" % (f["verdict"][0], (" — " + why) if why else "")]
         out += [""]
@@ -106,7 +114,8 @@ def main(argv=None):
     ap.add_argument("command", choices=["audit"])
     ap.add_argument("repo")
     ap.add_argument("--no-llm", action="store_true")
-    ap.add_argument("--model", default="qwen2.5-coder:7b")
+    ap.add_argument("--model", default="qwen", help="qwen | gemma | /path/to/model.gguf")
+    ap.add_argument("--compare", action="store_true", help="ask both local models the same question")
     ap.add_argument("-o", "--out", default="report.md")
     args = ap.parse_args(argv)
 
@@ -117,15 +126,25 @@ def main(argv=None):
     if not findings:
         summary = "No v0 check fired. That is not the same as clean: it means this run had nothing to point at, not that the strategy survives an audit."
     elif not args.no_llm:
-        if llm.available(args.model):
-            for f in findings[:2]:
+        wanted = ["qwen", "gemma"] if args.compare else [args.model]
+        usable = [m for m in wanted if llm.available(m)]
+        missing = [m for m in wanted if m not in usable]
+        limit = 4 if args.compare else 2
+        for f in findings[:limit]:
+            f["verdicts"] = []
+            for m in usable:
                 try:
-                    ans = llm.chat(PROMPT.format(question=f["question"], excerpts=_excerpts([f])), model=args.model)
-                    f["verdict"] = _verdict(ans)
+                    ans = llm.chat(PROMPT.format(question=f["question"], excerpts=_excerpts([f])), model=m)
+                    f["verdicts"].append((m, _verdict(ans)))
                 except Exception as exc:
-                    f["verdict"] = ("UNSURE", "model failed: %s" % str(exc)[-80:])
-        else:
-            summary = "(model %s not available — run: ollama pull %s)" % (args.model, args.model)
+                    f["verdicts"].append((m, ("UNSURE", "model failed: %s" % str(exc)[-80:])))
+        asked = [f for f in findings[:limit] if f.get("verdicts")]
+        if missing:
+            summary = "(not available: %s)" % ", ".join(missing)
+        if len(usable) > 1 and asked:
+            agree = sum(1 for f in asked if len({v for _, (v, _) in f["verdicts"]}) == 1)
+            line = "Two local models answered the same %d findings: %d agree, %d disagree." % (len(asked), agree, len(asked) - agree)
+            summary = (summary + " " + line).strip()
 
     text = render(args.repo, findings, summary)
     open(args.out, "w", encoding="utf-8").write(text)
