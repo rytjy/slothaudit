@@ -91,6 +91,11 @@ def render(repo, findings, summary):
     for f in findings:
         out += ["### %s [%s] %s" % (f["id"], f["severity"], f["title"]), "",
                 "%s:%d" % (f["path"], f["line"]), "", f["detail"]]
+        if f.get("evidence"):
+            out += ["", "Evidence:"]
+            for ln, src_line in f["evidence"][:3]:
+                shown = src_line if len(src_line) <= 110 else src_line[:107] + "..."
+                out.append("    %s:%d  %s" % (f["path"], ln, shown))
         if f.get("verdicts"):
             parts = []
             for name, (v, why) in f["verdicts"]:

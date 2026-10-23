@@ -62,9 +62,19 @@ A clean repo gets a deliberately un-reassuring answer:
   finding is worth reading yourself. There is no ground truth in the report —
   only who said what.
 
-  On the bundled broken sample the two agreed on **3 of 4** findings. The split
-  was the cost check: Qwen YES, Gemma NO. The run is committed as
-  [docs/compare_report.md](docs/compare_report.md).
+  On the bundled broken sample, two runs of the same audit gave **3 of 4** and
+  then **4 of 4** agreement. The code changed between them (the context window
+  moved to the evidence line), so the difference is not clean sampling variance
+  — and asking Gemma the cost question again in isolation returned NO in both
+  variants. At 2B the verdict is **not a stable measurement**, which is why the
+  report leads with the checker's evidence line and treats agreement as a hint.
+  Both runs are committed: [2026-10-22](docs/compare_report_1022.md) and
+  [2026-10-23](docs/compare_report.md).
+- **Every finding prints its own evidence line.** The checker already knows which
+  source line it matched, so the report shows that line verbatim under
+  `Evidence:` — the model's prose is never the reason to read a finding. For
+  absence checks (no fee term, no cooldown) it prints the ledger line and the
+  number of lines searched instead of pretending there is a match.
 - **The blind spot is fixed text**, not generated: this tool does not run the
   strategy, does not see your data, and cannot tell you the edge is real.
 
