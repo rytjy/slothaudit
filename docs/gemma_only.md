@@ -1,46 +1,58 @@
 # slothaudit report — samples/broken_lookahead
 
-Generated 2026-10-22 23:04, offline.
+Generated 2026-10-23 12:38, offline.
 
 ## Morning summary
 
-FIX FIRST: samples/broken_lookahead/strategy.py:1 — no fee or slippage term in the ledger
-ALSO: samples/broken_lookahead/strategy.py:9 — fill price read on the signal bar
-ALSO: samples/broken_lookahead/strategy.py:1 — entries without a cooldown
+FIX FIRST: samples/broken_lookahead/strategy.py:10 — fill price read on the signal bar
+ALSO: samples/broken_lookahead/strategy.py:12 — no fee or slippage term in the ledger
+ALSO: samples/broken_lookahead/strategy.py:8 — entries without a cooldown
 
 ## Findings
 
-### CO-01 [high] no fee or slippage term in the ledger
-
-samples/broken_lookahead/strategy.py:1
-
-This file records PnL but never mentions fee, commission, slippage or spread. At 4.5bps a side, high turnover can be negative before any edge.
-
-Model check: gemma **NO**
-
 ### LA-01 [high] fill price read on the signal bar
 
-samples/broken_lookahead/strategy.py:9
+samples/broken_lookahead/strategy.py:10
 
 A fill taken at index i while the signal is computed at i too is the classic same-bar leak. Check the fill uses i+1, or the next tick.
 
+Evidence:
+    samples/broken_lookahead/strategy.py:10  entry = df["close"][i]          # fill on the bar that produced the signal
+
 Model check: gemma **YES** — the code fills on the bar that produced the signal.
 
-### SI-01 [medium] entries without a cooldown
+### CO-01 [high] no fee or slippage term in the ledger
 
-samples/broken_lookahead/strategy.py:1
+samples/broken_lookahead/strategy.py:12
 
-Consecutive bars can each open a position, so one market event counts as many samples and n is inflated.
+This file records PnL but never mentions fee, commission, slippage or spread. Searched 24 lines: 0 matches for fee|commission|slippage|spread|cost. At 4.5bps a side, high turnover can be negative before any edge.
+
+Evidence:
+    samples/broken_lookahead/strategy.py:12  pnl = (exit_ - entry) * 100
 
 Model check: gemma **YES**
 
+### SI-01 [medium] entries without a cooldown
+
+samples/broken_lookahead/strategy.py:8
+
+Consecutive bars can each open a position, so one market event counts as many samples and n is inflated. Searched 24 lines: no cooldown|cool_down|debounce|last_entry.
+
+Evidence:
+    samples/broken_lookahead/strategy.py:8  for i in range(2, len(df) - 1):
+
+Model check: gemma **YES** — the code fills on the bar that produced the signal.
+
 ### MD-01 [medium] peak reset inside the drawdown loop
 
-samples/broken_lookahead/strategy.py:1
+samples/broken_lookahead/strategy.py:20
 
 Resetting peak to a cap turns the reported MDD into the local drawdown since the last reset. Report capped and raw separately.
 
-Model check: gemma **YES** — the equity is updated with each new bar.
+Evidence:
+    samples/broken_lookahead/strategy.py:20  peak = cap
+
+Model check: gemma **YES** — this code calculates a running peak by adding the current pnl to the previous peak.
 
 
 Blind spot: this tool does not run the strategy, does not see your data, and cannot tell you the edge is real.
