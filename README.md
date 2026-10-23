@@ -65,8 +65,8 @@ A clean repo gets a deliberately un-reassuring answer:
   On the bundled broken sample, two runs of the same audit gave **3 of 4** and
   then **4 of 4** agreement. The code changed between them (the context window
   moved to the evidence line), so the difference is not clean sampling variance
-  — and asking Gemma the cost question again in isolation returned NO in both
-  variants. At 2B the verdict is **not a stable measurement**, which is why the
+  — and isolated re-asks of the cost question returned NO, NO, then YES on the
+  same code. At 2B the verdict is **not a stable measurement**, which is why the
   report leads with the checker's evidence line and treats agreement as a hint.
   Both runs are committed: [2026-10-22](docs/compare_report_1022.md) and
   [2026-10-23](docs/compare_report.md).
